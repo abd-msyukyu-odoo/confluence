@@ -16,5 +16,5 @@ class Presence(Model):
         (ABSENT, 'Absent'),
     ]
 
-    # Fields
-    # TODO think of a way to put slot here (constraint error)
+    class Meta:
+        abstract = True
