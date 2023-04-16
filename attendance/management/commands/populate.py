@@ -3,7 +3,7 @@ import random
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
 from django.db.models.fields import NOT_PROVIDED
-from django.db import models, transaction, utils
+from django.db import models, utils
 
 from attendance.models import *
 from ._utils import *
@@ -29,21 +29,27 @@ class Command(BaseCommand):
             "--population",
             help="Base population per dependency (integer)",
         )
+        parser.add_argument(
+            "--noflush",
+            action='store_true',
+            help="Keep existing data",
+        )
 
     def handle(self, *args, **kwargs):
-        # empty the database
-        self.stdout.write(
-            self.style.NOTICE('Database flush ... '),
-            ending=''
-        )
-        call_command('flush', '--noinput')
-        self.stdout.write(
-            self.style.NOTICE('done'),
-        )
+        if not kwargs['noflush']:
+            # empty the database
+            self.stdout.write(
+                self.style.NOTICE('Database flush ... '),
+                ending=''
+            )
+            call_command('flush', '--noinput')
+            self.stdout.write(
+                self.style.NOTICE('done'),
+            )
 
         population = None
         if kwargs['population']:
-            population = kwargs['population']
+            population = int(kwargs['population'])
         models = []
         for model in kwargs["models"]:
             if model == 'all':
@@ -118,9 +124,10 @@ class Command(BaseCommand):
         )
         for record_fields in records_fields:
             try:
+                # TODO NVI find a way to bulk_create
                 model.objects.create(**record_fields)
             except utils.IntegrityError:
-                # TODO proper way of avoiding integrity constraints error
+                # TODO NVI proper way of avoiding integrity constraints error
                 continue
         self.stdout.write(
             self.style.SUCCESS('done')
