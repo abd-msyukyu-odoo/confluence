@@ -10,7 +10,7 @@ class AttendeePresence(Presence):
     ]
 
     # Fields
-    attendee = models.ForeignKey(to='Attendee', on_delete=models.CASCADE, help_text='Attendee')
+    attendee = models.ForeignKey(to='Person', on_delete=models.CASCADE, help_text='Attendee')
     slot = models.ForeignKey(to='Slot', on_delete=models.CASCADE, help_text='Slot')
     status = models.CharField(choices=STATUS_CHOICES, default=Presence.PRESENT, help_text='Status', max_length=15)
 

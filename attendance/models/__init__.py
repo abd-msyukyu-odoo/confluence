@@ -1,5 +1,6 @@
 # from .file import className
 
+from .user import User
 from .base import Model
 
 # Model dependencies
@@ -19,7 +20,3 @@ from .attendee_presence import AttendeePresence
 # Entity dependencies
 from .institution import Institution
 from .person import Person
-
-# Person dependencies
-from .tutor import Tutor
-from .attendee import Attendee

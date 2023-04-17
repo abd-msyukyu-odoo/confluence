@@ -7,7 +7,7 @@ class Slot(Model):
     """planned activity with a finite duration involving persons"""
 
     # Fields
-    attendee_presences = models.ManyToManyField(to='Attendee', blank=True, help_text='Attendees presences',
+    attendee_presences = models.ManyToManyField(to='Person', blank=True, help_text='Attendees presences',
                                                 related_name='+', through='AttendeePresence',
                                                 through_fields=('slot', 'attendee'))
     end_time = models.DateTimeField(blank=True, help_text='End Time', null=True)
@@ -17,7 +17,7 @@ class Slot(Model):
     slot_template = models.ForeignKey(to='SlotTemplate', on_delete=models.SET_NULL, blank=True, help_text='Template',
                                       null=True, related_name='slot_set')
     start_time = models.DateTimeField(blank=True, help_text='Start Time', null=True)
-    tutor_presences = models.ManyToManyField(to='Tutor', blank=True, help_text='Tutors presences', related_name='+',
+    tutor_presences = models.ManyToManyField(to='Person', blank=True, help_text='Tutors presences', related_name='+',
                                              through='TutorPresence', through_fields=('slot', 'tutor'))
 
     # Metadata

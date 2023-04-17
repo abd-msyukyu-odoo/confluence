@@ -12,8 +12,7 @@ class Command(BaseCommand):
     MODELS = {
         'slot_template': SlotTemplate,
         'institution': Institution,
-        'attendee': Attendee,
-        'tutor': Tutor,
+        'person': Person,
         'contact': Contact,
         'slot_template_organization': SlotTemplateOrganization,
         'slot_template_subscription': SlotTemplateSubscription,

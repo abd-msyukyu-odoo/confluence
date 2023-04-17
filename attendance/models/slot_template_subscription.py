@@ -6,7 +6,7 @@ class SlotTemplateSubscription(Model):
     """attendee subscription to a slot template"""
 
     # Fields
-    attendee = models.ForeignKey(to='Attendee', on_delete=models.CASCADE, help_text='Attendee')
+    attendee = models.ForeignKey(to='Person', on_delete=models.CASCADE, help_text='Attendee')
     slot_template = models.ForeignKey(to='SlotTemplate', on_delete=models.CASCADE, help_text='Slot Template')
     subscribed = models.BooleanField(default=True, help_text='subscribed')
 

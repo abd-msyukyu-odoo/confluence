@@ -7,7 +7,7 @@ class SlotTemplateOrganization(Model):
 
     # Fields
     slot_template = models.ForeignKey(to='SlotTemplate', on_delete=models.CASCADE, help_text='Slot Template')
-    tutor = models.ForeignKey(to='Tutor', on_delete=models.CASCADE, help_text='Tutor')
+    tutor = models.ForeignKey(to='Person', on_delete=models.CASCADE, help_text='Tutor')
     max_attendees = models.PositiveIntegerField(blank=True, help_text='Amount of attendees manageable by the Tutor', null=True)
 
     # Metadata

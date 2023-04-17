@@ -9,7 +9,7 @@ class TutorPresence(Presence):
     slot = models.ForeignKey(to='Slot', on_delete=models.CASCADE, help_text='Slot')
     status = models.CharField(choices=Presence.STATUS_CHOICES, default=Presence.PRESENT, help_text='Status',
                               max_length=15)
-    tutor = models.ForeignKey(to='Tutor', on_delete=models.CASCADE, help_text='Tutor')
+    tutor = models.ForeignKey(to='Person', on_delete=models.CASCADE, help_text='Tutor')
 
     # Metadata
     class Meta:

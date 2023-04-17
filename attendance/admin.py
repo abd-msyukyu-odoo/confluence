@@ -1,11 +1,13 @@
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin
 from .models import *
 
-# Register your models here.
+# Authentication models.
+admin.site.register(User, UserAdmin)
+# Custom models.
 admin.site.register(SlotTemplate)
 admin.site.register(Institution)
-admin.site.register(Attendee)
-admin.site.register(Tutor)
+admin.site.register(Person)
 admin.site.register(Contact)
 admin.site.register(SlotTemplateOrganization)
 admin.site.register(SlotTemplateSubscription)
