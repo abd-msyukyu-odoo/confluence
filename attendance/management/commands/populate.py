@@ -1,9 +1,15 @@
+import csv
 import random
 
+from contextlib import contextmanager
+
+from django.conf import settings
+from django.contrib.auth.models import Group, Permission
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
 from django.db.models.fields import NOT_PROVIDED
 from django.db import models, utils
+from rest_framework.authtoken.models import Token
 
 from attendance.models import *
 from ._utils import *
@@ -20,7 +26,33 @@ class Command(BaseCommand):
         'localization': Localization,
         'attendee_presence': AttendeePresence,
         'tutor_presence': TutorPresence,
+        'user': User,
     }
+    GROUPS = [{
+            'name': 'row_attendant',
+            'permissions': [],
+        }, {
+            'name': 'row_manager',
+            'permissions': [],
+        },
+    ]
+
+    @contextmanager
+    def populate_context_manager(self, model):
+        output = {
+            'link': '',
+            'source': [],
+        }
+        self.stdout.write(
+            self.style.SUCCESS('Populate model %s ... ' % model._meta.model_name),
+            ending=''
+        )
+        try:
+            yield output
+        finally:
+            self.stdout.write(
+                self.style.SUCCESS(output['link'].join(output['source']))
+            )
 
     def add_arguments(self, parser):
         parser.add_argument("models", nargs="+", type=str)
@@ -51,7 +83,10 @@ class Command(BaseCommand):
             population = int(kwargs['population'])
         models = []
         for model in kwargs["models"]:
-            if model == 'all':
+            if model == 'config':
+                models = []
+                break
+            elif model == 'all':
                 models = list(self.MODELS.keys())
                 break
             try:
@@ -61,8 +96,59 @@ class Command(BaseCommand):
                     self.style.ERROR('Model %s does not exist' % model)
                 )
 
+        # create system user
+        with self.populate_context_manager(User) as output:
+            system = User.objects.filter(username=settings.SYSTEM_USERNAME).first() or None
+            if not system:
+                system = User.objects.create_superuser(username=settings.SYSTEM_USERNAME)
+                token = Token.objects.create(user=system)
+                with open('.env', 'r+') as f:
+                    content = f.readlines()
+                    f.seek(0)
+                    for line in content:
+                        if line.startswith('SYSTEM_USER_TOKEN='):
+                            f.write('SYSTEM_USER_TOKEN=%s\n' % token.key)
+                        else:
+                            f.write(line)
+                    f.truncate()
+                output['source'].append('created')
+            else:
+                output['source'].append('used')
+            output['source'].append(' %s user' % settings.SYSTEM_USERNAME)
+
+        # read permissions
+        with open('attendance/models/_security.csv') as f:
+            csv_reader = csv.reader(f, delimiter=',')
+            property_names = next(csv_reader)
+            group_index = property_names.index('group_name')
+            model_index = property_names.index('model_name')
+            permission_indexes = [property_names.index(perm) for perm in ['add', 'delete', 'change', 'view']]
+            for row in csv_reader:
+                for group in self.GROUPS:
+                    if group['name'] == row[group_index]:
+                        Model = self.MODELS[row[model_index]]
+                        for perm_index in permission_indexes:
+                            if not int(row[perm_index]):
+                                continue
+                            permission = Permission.objects.get_by_natural_key(
+                                '%s_' % property_names[perm_index] + Model._meta.model_name,
+                                Model._meta.app_label,
+                                Model._meta.model_name
+                            )
+                            group['permissions'].append(permission)
+
+        # create group instances
+        with self.populate_context_manager(Group) as output:
+            output['link'] = ', '
+            for group_data in self.GROUPS:
+                group, create = Group.objects.get_or_create(name=group_data['name'])
+                group.permissions.add(*group_data['permissions'])
+                operation = 'created' if create else 'used'
+                output['source'].append('%s %s' % (operation, group.name))
+
+        # create model instances
         for key, model in list(self.MODELS.items()):
-            if key in models:
+            if key in models and key != 'user':
                 self.populate(model, population)
 
     def populate(self, model, population=5):
@@ -117,17 +203,12 @@ class Command(BaseCommand):
                     fields[field.name] = value
             records_fields.append(fields)
 
-        self.stdout.write(
-            self.style.SUCCESS('Populate model %s ... ' % model._meta.model_name),
-            ending=''
-        )
-        for record_fields in records_fields:
-            try:
-                # TODO NVI find a way to bulk_create
-                model.objects.create(**record_fields)
-            except utils.IntegrityError:
-                # TODO NVI proper way of avoiding integrity constraints error
-                continue
-        self.stdout.write(
-            self.style.SUCCESS('done')
-        )
+        with self.populate_context_manager(model) as output:
+            for record_fields in records_fields:
+                try:
+                    # TODO NVI find a way to bulk_create
+                    model.objects.create(**record_fields)
+                except utils.IntegrityError:
+                    # TODO NVI proper way of avoiding integrity constraints error
+                    continue
+            output['source'].append('done')

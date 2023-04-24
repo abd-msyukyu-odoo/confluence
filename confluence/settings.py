@@ -21,12 +21,15 @@ load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('SECRET_KEY')
+
+# SYSTEM USER
+SYSTEM_USERNAME = os.environ.get('SYSTEM_USERNAME')
+SYSTEM_USER_TOKEN = os.environ.get('SYSTEM_USER_TOKEN')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -43,6 +46,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # rest framework
+    'rest_framework',
+    'rest_framework.authtoken',
     # extensions
     'django_extensions',
     # custom apps
@@ -57,6 +63,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # custom middleware
+    'attendance.middleware.EnvironmentMiddleware'
 ]
 
 ROOT_URLCONF = 'confluence.urls'
@@ -79,6 +87,14 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'confluence.wsgi.application'
 
+# Rest framework configuration
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+        'attendance.authentication.AttendanceTokenAuthentication',
+    ]
+}
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
@@ -110,7 +126,6 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # Custom user model
-
 
 AUTH_USER_MODEL = 'attendance.User'
 

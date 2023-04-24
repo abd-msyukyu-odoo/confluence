@@ -1,14 +1,34 @@
+from attendance.middleware.environment_middleware import Environment
+from django.core.exceptions import PermissionDenied
 from django.db import models, transaction
 from django.db.models import Max
+import threading
+
+def env_permission_required(perm):
+    def permission_required(func):
+        def wrapper(self, *args, **kwargs):
+            if not self.id and not self.env.has_perm(self._meta.app_label + ('.%s_' % perm) + self._meta.model_name):
+                raise PermissionDenied('You do not have the permission to %s a "%s", please ask an Administrator to help you with your request' % (perm, self._meta.model_name))
+            return func(self, *args, **kwargs)
+        return wrapper
+    if perm in ['add', 'delete', 'change']:
+        return permission_required
+    else:
+        raise Exception("Invalid decorator argument")
 
 class Model(models.Model):
     """base model for default fields"""
 
     # Fields
-    archived = models.BooleanField(default=False, help_text='Archived')
     created_on = models.DateTimeField(auto_now_add=True, help_text='Creation Date')
+    is_active = models.BooleanField(default=True, help_text='Active')
     sequence = models.PositiveBigIntegerField(blank=True, default=0, help_text='Sequence')
     updated_on = models.DateTimeField(auto_now=True, help_text='Last Update Date')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        local = threading.local()
+        self.env = local.env if hasattr(local, 'env') else Environment(None)
 
     # Metadata
     class Meta:
@@ -16,6 +36,12 @@ class Model(models.Model):
         abstract = True
 
     # Methods
+    @env_permission_required('delete')
+    def delete(self, *args, **kwargs):
+        super().delete(*args, **kwargs)
+
+    @env_permission_required('add')
+    @env_permission_required('change')
     def save(self, *args, **kwargs):
         update_fields = kwargs.get('update_fields', None)
         if not self.sequence:
